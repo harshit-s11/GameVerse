@@ -1,0 +1,37 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+  <!-- Left Section - Quote -->
+  <div class="quote-section">
+    <h2 class="format"><span style="color: rgb(46, 223, 37);" >Game on,</span> world off</h2>
+  </div>
+
+  <!-- Right Section - Login Container -->
+  <div class="login-container">
+    <h1 class="audiowide-regular">Welcome Back!</h1>
+    <form id="login-form" class="input-group">
+      <div class="input-group">
+        <label for="email">Username</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      </div>
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <!-- Button Container -->
+      <div class="button-container">
+        <button type="submit" onclick="window.location.href='index.html'">Sign In</button>
+      </div>
+    </form>
+    <p class="login-link">Don't have an account? <a href="signup.html">Sign Up</a></p>
+  </div>
+  <script src="login.js"></script>
+</body>
+</html>

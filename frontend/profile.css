@@ -1,0 +1,66 @@
+
+/* General Styles */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Paprika&family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+    background-image: url("C:/Users/pragy/Downloads/pixelcut-export.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+  
+  .profile-section {
+    padding: 20px;
+  }
+  
+  /* Profile Card */
+  .profile-card {
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    color: #fff;
+  }
+  
+  .profile-image {
+    width: 150px;
+    height: 150px;
+    border: 3px solid #2575fc;
+  }
+  
+  .profile-name {
+    font-family: "Michroma", serif;
+    font-size: 2rem;
+    color: rgb(240, 233, 25);
+  }
+  
+  .profile-button {
+    font-family: "Michroma", serif;
+    background: linear-gradient(135deg, #6a11cb, #d125fc);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 12px;
+    transition: 0.4s ease-in-out;
+  }
+  
+  .profile-button:hover {
+    background: linear-gradient(135deg, #d125fc, #6a11cb);
+    transform: translateY(-3px);
+  }
+  
+  /* Progress Bars */
+  .progress-bar {
+    background: linear-gradient(135deg, #00ff00, #f0e919);
+  }
+  
+  /* Social Media Icons */
+  .list-group-item {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+  }

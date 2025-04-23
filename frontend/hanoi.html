@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tower of Hanoi</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: #2a4365;
+      margin-bottom: 10px;
+    }
+    
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    
+    button {
+      padding: 8px 16px;
+      background-color: #3182ce;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    button:hover {
+      background-color: #2c5282;
+    }
+    
+    .info {
+      margin-top: 20px;
+      text-align: center;
+      color: #4a5568;
+    }
+    
+    #moves-counter, #min-moves {
+      font-weight: bold;
+      color: #2a4365;
+    }
+    
+    #game-canvas {
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats {
+      display: flex;
+      gap: 30px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #4a5568;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2a4365;
+    }
+    
+    .progress {
+      margin-top: 5px;
+      height: 6px;
+      width: 100%;
+      background-color: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background-color: #3182ce;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tower of Hanoi</h1>
+  
+  <div class="controls">
+    <label for="disk-count">Number of disks:</label>
+    <select id="disk-count">
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+    </select>
+    <button id="restart-btn">Restart</button>
+  </div>
+  
+  <canvas id="game-canvas" width="600" height="300"></canvas>
+  
+  <div class="stats">
+    <div class="stat-item">
+      <span class="stat-label">Current Moves</span>
+      <span id="moves-counter" class="stat-value">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Minimum Possible</span>
+      <span id="min-moves" class="stat-value">7</span>
+    </div>
+  </div>
+  
+  <div class="info">
+    <div class="progress">
+      <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+    </div>
+    <p>Click on a tower to select a disk, then click another tower to move it.</p>
+  </div>
+  
+  <script>
+    // Game configuration
+    const config = {
+      pegWidth: 10,
+      pegHeight: 150,
+      pegColor: '#4a5568',
+      diskColors: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5', '#6b46c1', '#b83280'],
+      baseWidth: 500,
+      baseHeight: 20,
+      baseColor: '#2d3748',
+      pegSpacing: 180,
+      diskHeightOffset: 20,
+      diskWidthStep: 20,
+      minDiskWidth: 40,
+      animationSpeed: 5
+    };
+    
+    // Game state
+    let disks = 3;
+    let towers = [[], [], []];
+    let selectedTower = null;
+    let moves = 0;
+    let minMoves = 7; // Default for 3 disks
+    let animating = false;
+    let movingDisk = null;
+    let animationPath = [];
+    let targetTower = null; // Store the target tower for animation completion
+    
+    // Canvas elements
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const diskCountSelect = document.getElementById('disk-count');
+    const restartBtn = document.getElementById('restart-btn');
+    const movesCounter = document.getElementById('moves-counter');
+    const minMovesDisplay = document.getElementById('min-moves');
+    const progressBar = document.getElementById('progress-bar');
+    
+    // Calculate minimum moves for n disks (2^n - 1)
+    function calculateMinMoves(n) {
+      return Math.pow(2, n) - 1;
+    }
+    
+    // Update progress bar
+    function updateProgressBar() {
+      const efficiency = Math.min(1, minMoves / moves) * 100;
+      progressBar.style.width = `${efficiency}%`;
+      
+      // Change color based on efficiency
+      if (efficiency >= 90) {
+        progressBar.style.backgroundColor = '#38a169'; // Green
+      } else if (efficiency >= 70) {
+        progressBar.style.backgroundColor = '#d69e2e'; // Yellow
+      } else {
+        progressBar.style.backgroundColor = '#e53e3e'; // Red
+      }
+    }
+    
+    // Initialize the game
+    function initGame() {
+      disks = parseInt(diskCountSelect.value);
+      towers = [[], [], []];
+      selectedTower = null;
+      moves = 0;
+      minMoves = calculateMinMoves(disks);
+      
+      movesCounter.textContent = moves;
+      minMovesDisplay.textContent = minMoves;
+      updateProgressBar();
+      
+      animating = false;
+      
+      // Initialize the first tower with all disks
+      for (let i = disks; i > 0; i--) {
+        towers[0].push(i);
+      }
+      
+      draw();
+    }
+    
+    // Calculate positions
+    function calcPegX(pegIndex) {
+      return canvas.width / 2 + (pegIndex - 1) * config.pegSpacing;
+    }
+    
+    function calcDiskWidth(diskSize) {
+      return config.minDiskWidth + (diskSize - 1) * config.diskWidthStep;
+    }
+    
+    // Draw functions
+    function draw() {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw base
+      const baseX = (canvas.width - config.baseWidth) / 2;
+      const baseY = canvas.height - config.baseHeight;
+      ctx.fillStyle = config.baseColor;
+      ctx.fillRect(baseX, baseY, config.baseWidth, config.baseHeight);
+      
+      // Draw pegs
+      for (let i = 0; i < 3; i++) {
+        const pegX = calcPegX(i);
+        const pegY = baseY - config.pegHeight;
+        ctx.fillStyle = config.pegColor;
+        ctx.fillRect(pegX - config.pegWidth/2, pegY, config.pegWidth, config.pegHeight);
+        
+        // Highlight selected tower
+        if (selectedTower === i) {
+          ctx.strokeStyle = '#4299e1';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(pegX - config.pegWidth/2 - 5, pegY - 5, config.pegWidth + 10, config.pegHeight + 10);
+        }
+      }
+      
+      // Draw disks on each peg
+      for (let i = 0; i < 3; i++) {
+        const pegX = calcPegX(i);
+        const pegBaseY = baseY;
+        
+        for (let j = 0; j < towers[i].length; j++) {
+          const diskSize = towers[i][j];
+          const diskWidth = calcDiskWidth(diskSize);
+          const diskY = pegBaseY - (j + 1) * config.diskHeightOffset;
+          
+          // Draw disk
+          ctx.fillStyle = config.diskColors[(diskSize - 1) % config.diskColors.length];
+          ctx.beginPath();
+          ctx.roundRect(pegX - diskWidth/2, diskY - config.diskHeightOffset + 5, diskWidth, config.diskHeightOffset - 5, 5);
+          ctx.fill();
+        }
+      }
+      
+      // Draw moving disk if animating
+      if (animating && movingDisk) {
+        const diskSize = movingDisk;
+        const diskWidth = calcDiskWidth(diskSize);
+        const diskPos = animationPath[0];
+        
+        // Draw the moving disk
+        ctx.fillStyle = config.diskColors[(diskSize - 1) % config.diskColors.length];
+        ctx.beginPath();
+        ctx.roundRect(diskPos.x - diskWidth/2, diskPos.y - config.diskHeightOffset + 5, 
+                      diskWidth, config.diskHeightOffset - 5, 5);
+        ctx.fill();
+      }
+    }
+    
+    // Handle tower selection and moves
+    function handleTowerClick(towerIndex) {
+      if (animating) return;
+      
+      // If no tower is selected and the clicked tower has disks, select it
+      if (selectedTower === null) {
+        if (towers[towerIndex].length > 0) {
+          selectedTower = towerIndex;
+          draw();
+        }
+        return;
+      }
+      
+      // If a tower is already selected
+      if (selectedTower === towerIndex) {
+        // Deselect if clicking the same tower
+        selectedTower = null;
+        draw();
+        return;
+      }
+      
+      // Attempt to move the disk
+      const fromTower = towers[selectedTower];
+      const toTower = towers[towerIndex];
+      
+      if (fromTower.length === 0) {
+        selectedTower = null;
+        draw();
+        return;
+      }
+      
+      const movingDiskSize = fromTower[fromTower.length - 1];
+      const topDiskSize = toTower.length > 0 ? toTower[toTower.length - 1] : Infinity;
+      
+      if (movingDiskSize < topDiskSize) {
+        // Valid move, animate it
+        moves++;
+        movesCounter.textContent = moves;
+        updateProgressBar();
+        
+        // Start animation
+        startMoveAnimation(selectedTower, towerIndex, fromTower[fromTower.length - 1]);
+        
+        selectedTower = null;
+      } else {
+        // Invalid move
+        selectedTower = null;
+        draw();
+      }
+    }
+    
+    function startMoveAnimation(fromTower, toTower, diskSize) {
+      animating = true;
+      movingDisk = diskSize;
+      targetTower = toTower; // Store the target tower for later use
+      
+      // Remove disk from source tower
+      towers[fromTower].pop();
+      
+      // Calculate animation path
+      const fromPegX = calcPegX(fromTower);
+      const toPegX = calcPegX(toTower);
+      const fromPegY = canvas.height - config.baseHeight - (towers[fromTower].length + 1) * config.diskHeightOffset;
+      const toPegY = canvas.height - config.baseHeight - (towers[toTower].length) * config.diskHeightOffset;
+      
+      // Calculate control point for arc (higher than both points)
+      const controlY = Math.min(fromPegY, toPegY) - 80;
+      
+      // Generate points along a curved path
+      animationPath = [];
+      const steps = 40;
+      
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        // Quadratic Bezier curve
+        const x = (1-t) * (1-t) * fromPegX + 2 * (1-t) * t * ((fromPegX + toPegX) / 2) + t * t * toPegX;
+        const y = (1-t) * (1-t) * fromPegY + 2 * (1-t) * t * controlY + t * t * toPegY;
+        animationPath.push({x, y});
+      }
+      
+      // Start animation loop
+      requestAnimationFrame(animateMove);
+    }
+    
+    function animateMove() {
+      if (animationPath.length > 1) {
+        // Remove the current point
+        animationPath.shift();
+        draw();
+        requestAnimationFrame(animateMove);
+      } else {
+        // Animation complete, add disk to destination tower
+        towers[targetTower].push(movingDisk);
+        animating = false;
+        movingDisk = null;
+        animationPath = [];
+        draw();
+        
+        // Check if the game is complete
+        checkForWin();
+      }
+    }
+    
+    function checkForWin() {
+      // Game is won when all disks are on the third tower
+      if (towers[2].length === disks) {
+        setTimeout(() => {
+          let efficiency = Math.round((minMoves / moves) * 100);
+          let message = `Congratulations! You solved the Tower of Hanoi in ${moves} moves!\n\n`;
+          
+          if (moves === minMoves) {
+            message += `PERFECT! You found the optimal solution (${minMoves} moves)!`;
+          } else {
+            message += `The minimum possible moves was ${minMoves}.\n`;
+            message += `Your efficiency: ${efficiency}%`;
+            
+            if (efficiency > 90) {
+              message += "\nExcellent work!";
+            } else if (efficiency > 75) {
+              message += "\nGood job!";
+            } else if (efficiency > 50) {
+              message += "\nNot bad, but you can do better!";
+            } else {
+              message += "\nKeep practicing to improve!";
+            }
+          }
+          
+          alert(message);
+        }, 500);
+      }
+    }
+    
+    // Event Listeners
+    canvas.addEventListener('click', (e) => {
+      if (animating) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      
+      // Determine which tower was clicked
+      const tower1X = calcPegX(0);
+      const tower2X = calcPegX(1);
+      const tower3X = calcPegX(2);
+      
+      const clickRange = config.pegSpacing / 2;
+      
+      if (Math.abs(clickX - tower1X) < clickRange) {
+        handleTowerClick(0);
+      } else if (Math.abs(clickX - tower2X) < clickRange) {
+        handleTowerClick(1);
+      } else if (Math.abs(clickX - tower3X) < clickRange) {
+        handleTowerClick(2);
+      }
+    });
+    
+    diskCountSelect.addEventListener('change', initGame);
+    restartBtn.addEventListener('click', initGame);
+    
+    // Initialize the game
+    initGame();
+  </script>
+</body>
+</html>

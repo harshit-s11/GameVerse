@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic Tac Toe</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: lightcyan;
+      text-align: center;
+    }
+    .container {
+      height: 70vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .game {
+      height: 60vmin;
+      width: 60vmin;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5vmin;
+      justify-content: center;
+    }
+    .box {
+      height: 18vmin;
+      width: 18vmin;
+      border-radius: 1rem;
+      border: none;
+      box-shadow: 0 0 1rem rgba(0,0,0,0.3);
+      font-size: 8vmin;
+      color: red;
+      background-color: yellow;
+    }
+    #reset, #new-btn, #leaderboard-btn {
+      padding: 1rem;
+      font-size: 1.25rem;
+      background: #191913;
+      color: white;
+      border-radius: 1rem;
+      border: none;
+      margin: 1rem;
+    }
+    .box:hover {
+      background-color: chocolate;
+    }
+    #msg {
+      font-size: 8vmin;
+    }
+    .msg-container {
+      height: 30vmin;
+    }
+    .hide {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="msg-container hide">
+    <p id="msg">Winner</p>
+    <button id="new-btn">New Game</button>
+  </div>
+
+  <main>
+    <h1>Tic Tac Toe</h1>
+    <div class="container">
+      <div class="game">
+        <button class="box"></button>
+        <button class="box"></button>
+        <button class="box"></button>
+        <button class="box"></button>
+        <button class="box"></button>
+        <button class="box"></button>
+        <button class="box"></button>
+        <button class="box"></button>
+        <button class="box"></button>
+      </div>
+    </div>
+    <button id="reset">Reset Game</button>
+    <button id="leaderboard-btn" onclick="window.location.href='leaderboard.html'">View Leaderboard</button>
+  </main>
+
+  <script>
+    let boxes = document.querySelectorAll('.box');
+    let resetBtn = document.querySelector('#reset');
+    let turnO = true; // Player O starts
+    let newGameBtn = document.querySelector('#new-btn');
+    let msgContainer = document.querySelector('.msg-container');
+    let msg = document.querySelector('#msg');
+
+    const winPatterns = [
+      [0, 1, 2],
+      [0, 3, 6],
+      [0, 4, 8],
+      [1, 4, 7],
+      [2, 5, 8],
+      [2, 4, 6],
+      [3, 4, 5],
+      [6, 7, 8]
+    ];
+
+    boxes.forEach((box) => {
+      box.addEventListener('click', function () {
+        if (turnO) {
+          box.innerText = 'O';
+          box.style.color = 'green';
+          turnO = false;
+        } else {
+          box.innerText = 'X';
+          box.style.color = 'black';
+          turnO = true;
+        }
+        box.disabled = true;
+        checkWinner();
+      });
+    });
+
+    const enableBoxes = () => {
+      for (let box of boxes) {
+        box.disabled = false;
+        box.innerText = "";
+      }
+    };
+
+    const disableBoxes = () => {
+      for (let box of boxes) {
+        box.disabled = true;
+      }
+    };
+
+    const showWinner = (winner) => {
+      msg.innerText = `Congratulations, Winner is ${winner}`;
+      msgContainer.classList.remove('hide');
+      disableBoxes();
+
+      // ✅ Save to leaderboard
+      const currentPlayer = localStorage.getItem("currentPlayer") || "Guest";
+      if (winner === 'X' || winner === 'O') {
+        let wins = JSON.parse(localStorage.getItem("playerWins")) || {};
+        wins[currentPlayer] = (wins[currentPlayer] || 0) + 1;
+        localStorage.setItem("playerWins", JSON.stringify(wins));
+
+        // Submit to backend if needed
+        fetch("http://localhost:5000/submit-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: currentPlayer,
+            score: 2000,
+            achievements: ["Tic Tac Toe Victory"]
+          })
+        });
+      }
+    };
+
+    const checkWinner = () => {
+      let hasWin = false;
+      for (let pattern of winPatterns) {
+        let [a, b, c] = pattern;
+        let val1 = boxes[a].innerText;
+        let val2 = boxes[b].innerText;
+        let val3 = boxes[c].innerText;
+
+        if (val1 !== "" && val1 === val2 && val2 === val3) {
+          showWinner(val1);
+          hasWin = true;
+          return;
+        }
+      }
+
+      if (!hasWin) {
+        const allFilled = [...boxes].every(box => box.innerText !== "");
+        if (allFilled) {
+          msg.innerText = 'Match Drawn';
+          msgContainer.classList.remove('hide');
+        }
+      }
+    };
+
+    const resetGame = () => {
+      turnO = true;
+      enableBoxes();
+      msgContainer.classList.add('hide');
+    };
+
+    newGameBtn.addEventListener('click', resetGame);
+    resetBtn.addEventListener('click', resetGame);
+  </script>
+</body>
+</html>

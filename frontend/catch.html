@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Catch the Ball Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background: #87ceeb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      color: #fff;
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+    #gameArea {
+      position: relative;
+      width: 80vw;
+      height: 70vh;
+      background-color: #ffffff;
+      border: 2px solid #000;
+      overflow: hidden;
+    }
+    .ball {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: red;
+    }
+    #player {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 80px;
+      height: 40px;
+      background: linear-gradient(to bottom, #8B4513, #A0522D);
+      border-top-left-radius: 40px;
+      border-top-right-radius: 40px;
+      box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
+      border: 2px solid #5c3317;
+    }
+    #score {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+    #timer {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+    #endMessage {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2rem;
+      color: #fff;
+      display: none;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Catch the Ball Game</h1>
+  <div id="score">Score: 0</div>
+  <div id="timer">Time: 0</div>
+  <div id="gameArea">
+    <div id="endMessage">Game Over! 🎉</div>
+    <div id="player"></div>
+  </div>
+  <button id="playPauseBtn">Start Game</button>
+
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const player = document.getElementById("player");
+    const scoreBoard = document.getElementById("score");
+    const timerBoard = document.getElementById("timer");
+    const endMessage = document.getElementById("endMessage");
+    const playPauseBtn = document.getElementById("playPauseBtn");
+
+    let score = 0;
+    let timer = 0;
+    let gameRunning = false;
+    let gameInterval;
+    let ballSpeed = 2;
+    let spawnInterval;
+    let playerPosition = (gameArea.offsetWidth - player.offsetWidth) / 2;
+    let timeRemaining = 30;
+
+    const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33A8', '#F4D03F'];
+
+    function movePlayer(e) {
+      if (!gameRunning) return;
+      const gameAreaRect = gameArea.getBoundingClientRect();
+      let x = e.clientX - gameAreaRect.left;
+      x = Math.max(0, Math.min(x, gameArea.offsetWidth - player.offsetWidth));
+      player.style.left = x + "px";
+      playerPosition = x;
+    }
+
+    function randomColor() {
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function spawnBall() {
+      if (!gameRunning) return;
+      const ball = document.createElement("div");
+      ball.classList.add("ball");
+      ball.style.left = Math.random() * (gameArea.offsetWidth - 30) + "px";
+      ball.style.top = "-30px";
+      ball.style.backgroundColor = randomColor();
+      gameArea.appendChild(ball);
+
+      const moveBall = setInterval(() => {
+        if (!gameRunning) {
+          clearInterval(moveBall);
+          ball.remove();
+          return;
+        }
+
+        let ballTop = parseInt(ball.style.top);
+        ball.style.top = ballTop + ballSpeed + "px";
+
+        if (ballTop > gameArea.offsetHeight) {
+          clearInterval(moveBall);
+          ball.remove();
+        }
+
+        if (
+          ballTop + 30 >= gameArea.offsetHeight - 40 &&
+          parseInt(ball.style.left) + 15 >= playerPosition &&
+          parseInt(ball.style.left) + 15 <= playerPosition + player.offsetWidth
+        ) {
+          score++;
+          scoreBoard.textContent = "Score: " + score;
+          clearInterval(moveBall);
+          ball.remove();
+        }
+      }, 20);
+    }
+
+    function startGame() {
+      score = 0;
+      gameRunning = true;
+      timeRemaining = 30;
+      scoreBoard.textContent = "Score: " + score;
+      timerBoard.textContent = "Time: " + timeRemaining;
+      endMessage.style.display = "none";
+      playPauseBtn.textContent = "Pause Game";
+      
+      spawnInterval = setInterval(spawnBall, 1000);
+      gameInterval = setInterval(() => {
+        if (timeRemaining > 0) {
+          timeRemaining--;
+          timerBoard.textContent = "Time: " + timeRemaining;
+        } else {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function pauseGame() {
+      gameRunning = false;
+      clearInterval(spawnInterval);
+      clearInterval(gameInterval);
+      playPauseBtn.textContent = "Resume Game";
+    }
+
+    function resumeGame() {
+      gameRunning = true;
+      playPauseBtn.textContent = "Pause Game";
+
+      spawnInterval = setInterval(spawnBall, 1000);
+      gameInterval = setInterval(() => {
+        if (timeRemaining > 0) {
+          timeRemaining--;
+          timerBoard.textContent = "Time: " + timeRemaining;
+        } else {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      clearInterval(spawnInterval);
+      gameRunning = false;
+      endMessage.style.display = "block";
+      playPauseBtn.textContent = "Start Game";
+    }
+
+    playPauseBtn.addEventListener("click", () => {
+      if (!gameRunning && timeRemaining === 30) {
+        startGame();
+      } else if (gameRunning) {
+        pauseGame();
+      } else {
+        resumeGame();
+      }
+    });
+
+    document.addEventListener("mousemove", movePlayer);
+  </script>
+</body>
+</html>

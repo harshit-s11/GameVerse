@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Math Challenge Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #d0eaff, #f0fff0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    #score, #timer {
+      font-size: 1.2rem;
+      color: #333;
+    }
+    #gameArea {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    #question {
+      font-size: 2rem;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    #answerInput {
+      padding: 10px;
+      font-size: 1.2rem;
+      width: 120px;
+      border-radius: 8px;
+      border: 2px solid #ccc;
+    }
+    #submitBtn {
+      padding: 10px 20px;
+      margin-top: 15px;
+      font-size: 1.1rem;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #submitBtn:hover {
+      background-color: #218838;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 1.3rem;
+    }
+    .correct {
+      color: green;
+      animation: pop 0.3s;
+    }
+    .wrong {
+      color: red;
+      animation: shake 0.3s;
+    }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Math Challenge</h1>
+  <div id="score">Score: 0</div>
+  <div id="timer">Time Left: 10s</div>
+
+  <div id="gameArea">
+    <div id="question">3 + 4 = ?</div>
+    <input type="number" id="answerInput" placeholder="Your answer" />
+    <br />
+    <button id="submitBtn">Submit</button>
+    <div id="message"></div>
+  </div>
+
+  <audio id="correctSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_7cf40397ab.mp3?filename=correct-answer-2-37950.mp3"></audio>
+  <audio id="wrongSound" src="https://cdn.pixabay.com/download/audio/2021/10/20/audio_84d87e820b.mp3?filename=error-2-126514.mp3"></audio>
+
+  <script>
+    const questionEl = document.getElementById("question");
+    const inputEl = document.getElementById("answerInput");
+    const messageEl = document.getElementById("message");
+    const scoreEl = document.getElementById("score");
+    const timerEl = document.getElementById("timer");
+    const correctSound = document.getElementById("correctSound");
+    const wrongSound = document.getElementById("wrongSound");
+
+    let score = 0;
+    let timeLeft = 10;
+    let currentAnswer = 0;
+    let timer;
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateQuestion() {
+      const operations = ['+', '-', '*'];
+      const op = operations[getRandomInt(0, operations.length - 1)];
+      let a, b;
+
+      // Increase difficulty as score increases
+      if (score < 5) {
+        a = getRandomInt(1, 10);
+        b = getRandomInt(1, 10);
+      } else if (score < 10) {
+        a = getRandomInt(10, 30);
+        b = getRandomInt(5, 20);
+      } else {
+        a = getRandomInt(20, 50);
+        b = getRandomInt(10, 30);
+      }
+
+      let questionText;
+      switch (op) {
+        case '+': currentAnswer = a + b; questionText = `${a} + ${b} = ?`; break;
+        case '-': currentAnswer = a - b; questionText = `${a} - ${b} = ?`; break;
+        case '*': currentAnswer = a * b; questionText = `${a} × ${b} = ?`; break;
+      }
+
+      questionEl.textContent = questionText;
+      inputEl.value = "";
+      inputEl.focus();
+      messageEl.textContent = "";
+      timeLeft = 5;
+      updateTimer();
+    }
+
+    function updateTimer() {
+      clearInterval(timer);
+      timerEl.textContent = `Time Left: ${timeLeft}s`;
+      timer = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = `Time Left: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          messageEl.textContent = `⏰ Time's up! Answer was ${currentAnswer}`;
+          messageEl.className = "wrong";
+          wrongSound.play();
+          setTimeout(generateQuestion, 2000);
+        }
+      }, 1000);
+    }
+
+    function checkAnswer() {
+      const userAnswer = parseInt(inputEl.value);
+      if (userAnswer === currentAnswer) {
+        score++;
+        correctSound.play();
+        messageEl.textContent = "✅ Correct!";
+        messageEl.className = "correct";
+        scoreEl.textContent = `Score: ${score}`;
+        clearInterval(timer);
+        setTimeout(generateQuestion, 1000);
+      } else {
+        wrongSound.play();
+        messageEl.textContent = "❌ Wrong! Try again.";
+        messageEl.className = "wrong";
+      }
+    }
+
+    document.getElementById("submitBtn").addEventListener("click", checkAnswer);
+    inputEl.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") checkAnswer();
+    });
+
+    // Start game
+    generateQuestion();
+  </script>
+</body>
+</html>

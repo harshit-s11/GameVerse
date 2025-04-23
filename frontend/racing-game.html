@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SVG Car Racing Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #222;
+    }
+    .game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    svg {
+      background-color: #333;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .controls {
+      position: absolute;
+      bottom: 20px;
+      background-color: rgba(0,0,0,0.7);
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+    }
+    .game-over, .start-screen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0,0,0,0.8);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 10px;
+      text-align: center;
+      display: none;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .scoreboard {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: rgba(0,0,0,0.7);
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <svg id="game" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="controls">
+      Use Arrow Keys or WASD to drive
+    </div>
+    <div class="scoreboard">
+      <div>Speed: <span id="speed">0</span> mph</div>
+      <div>Score: <span id="score">0</span></div>
+      <div>High Score: <span id="high-score">0</span></div>
+    </div>
+    <div class="start-screen" id="start-screen">
+      <h2>Road Racer</h2>
+      <p>Avoid obstacles and drive as far as you can!</p>
+      <button id="start-button">Start Game</button>
+    </div>
+    <div class="game-over" id="game-over">
+      <h2>Game Over!</h2>
+      <p>Your score: <span id="final-score">0</span></p>
+      <button id="restart-button">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // Game setup
+    const svg = document.getElementById('game');
+    const ns = "http://www.w3.org/2000/svg";
+    const gameWidth = 800;
+    const gameHeight = 600;
+    const roadWidth = 300;
+    const laneMarkingWidth = 10;
+    const laneMarkingHeight = 50;
+    const laneMarkingGap = 30;
+    
+    // Game state
+    let player = null;
+    let obstacles = [];
+    let roadMarkings = [];
+    let animationId = null;
+    let keys = {};
+    let gameSpeed = 0;
+    let maxSpeed = 10;
+    let acceleration = 0.1;
+    let deceleration = 0.05;
+    let score = 0;
+    let highScore = 0;
+    let isGameRunning = false;
+    let obstacleSpawnRate = 0.02;
+    let lastObstacleTime = 0;
+    let obstacleMinGap = 800;
+
+    // Initialize the game environment
+    function initGame() {
+      // Create road
+      createRoad();
+      
+      // Create player
+      player = createPlayer();
+      
+      // Initial road markings
+      for (let y = -laneMarkingHeight; y < gameHeight + laneMarkingHeight; y += laneMarkingHeight + laneMarkingGap) {
+        createRoadMarking(y);
+      }
+      
+      document.getElementById('start-screen').style.display = 'block';
+      document.getElementById('start-button').addEventListener('click', startGame);
+      document.getElementById('restart-button').addEventListener('click', restartGame);
+      
+      // Set up event listeners
+      window.addEventListener('keydown', e => {
+        keys[e.key] = true;
+      });
+      
+      window.addEventListener('keyup', e => {
+        keys[e.key] = false;
+      });
+    }
+    
+    function createRoad() {
+      const road = document.createElementNS(ns, 'rect');
+      road.setAttribute('x', (gameWidth - roadWidth) / 2);
+      road.setAttribute('y', 0);
+      road.setAttribute('width', roadWidth);
+      road.setAttribute('height', gameHeight);
+      road.setAttribute('fill', '#444');
+      road.setAttribute('stroke', '#FFF');
+      road.setAttribute('stroke-width', '5');
+      svg.appendChild(road);
+      
+      // Road shoulder lines
+      const leftLine = document.createElementNS(ns, 'line');
+      leftLine.setAttribute('x1', (gameWidth - roadWidth) / 2);
+      leftLine.setAttribute('y1', 0);
+      leftLine.setAttribute('x2', (gameWidth - roadWidth) / 2);
+      leftLine.setAttribute('y2', gameHeight);
+      leftLine.setAttribute('stroke', '#FFF');
+      leftLine.setAttribute('stroke-width', '3');
+      svg.appendChild(leftLine);
+      
+      const rightLine = document.createElementNS(ns, 'line');
+      rightLine.setAttribute('x1', (gameWidth + roadWidth) / 2);
+      rightLine.setAttribute('y1', 0);
+      rightLine.setAttribute('x2', (gameWidth + roadWidth) / 2);
+      rightLine.setAttribute('y2', gameHeight);
+      rightLine.setAttribute('stroke', '#FFF');
+      rightLine.setAttribute('stroke-width', '3');
+      svg.appendChild(rightLine);
+      
+      // Add some scenery
+      createScenery();
+    }
+    
+    function createScenery() {
+      // Draw some trees and mountains in the background
+      const background = document.createElementNS(ns, 'rect');
+      background.setAttribute('x', 0);
+      background.setAttribute('y', 0);
+      background.setAttribute('width', gameWidth);
+      background.setAttribute('height', gameHeight);
+      background.setAttribute('fill', '#333');
+      svg.insertBefore(background, svg.firstChild);
+      
+      // Mountains
+      for (let i = 0; i < 5; i++) {
+        const mountainSize = 80 + Math.random() * 100;
+        const mountain = document.createElementNS(ns, 'polygon');
+        const x = Math.random() * gameWidth;
+        const points = `${x},${gameHeight} ${x + mountainSize},${gameHeight} ${x + mountainSize/2},${gameHeight - mountainSize}`;
+        mountain.setAttribute('points', points);
+        mountain.setAttribute('fill', '#2d2d2d');
+        svg.insertBefore(mountain, svg.firstChild);
+      }
+      
+      // Trees on left side
+      for (let i = 0; i < 15; i++) {
+        createTree(Math.random() * ((gameWidth - roadWidth) / 2 - 40), gameHeight - Math.random() * 400);
+      }
+      
+      // Trees on right side
+      for (let i = 0; i < 15; i++) {
+        createTree((gameWidth + roadWidth) / 2 + Math.random() * ((gameWidth - roadWidth) / 2 - 40), gameHeight - Math.random() * 400);
+      }
+    }
+    
+    function createTree(x, y) {
+      const tree = document.createElementNS(ns, 'g');
+      
+      // Tree trunk
+      const trunk = document.createElementNS(ns, 'rect');
+      trunk.setAttribute('x', x - 5);
+      trunk.setAttribute('y', y);
+      trunk.setAttribute('width', 10);
+      trunk.setAttribute('height', 30);
+      trunk.setAttribute('fill', '#5d4037');
+      tree.appendChild(trunk);
+      
+      // Tree top
+      const treeTop = document.createElementNS(ns, 'polygon');
+      const size = 20 + Math.random() * 10;
+      treeTop.setAttribute('points', `${x},${y-size} ${x-size},${y+5} ${x+size},${y+5}`);
+      treeTop.setAttribute('fill', '#2e7d32');
+      tree.appendChild(treeTop);
+      
+      svg.insertBefore(tree, svg.firstChild.nextSibling);
+    }
+    
+    function createPlayer() {
+      const playerGroup = document.createElementNS(ns, 'g');
+      playerGroup.setAttribute('id', 'player');
+      
+      // Car body
+      const carBody = document.createElementNS(ns, 'rect');
+      carBody.setAttribute('x', -25);
+      carBody.setAttribute('y', -40);
+      carBody.setAttribute('width', 50);
+      carBody.setAttribute('height', 80);
+      carBody.setAttribute('rx', 10);
+      carBody.setAttribute('ry', 10);
+      carBody.setAttribute('fill', '#f44336');
+      carBody.setAttribute('stroke', '#b71c1c');
+      carBody.setAttribute('stroke-width', '2');
+      playerGroup.appendChild(carBody);
+      
+      // Windows
+      const windshield = document.createElementNS(ns, 'rect');
+      windshield.setAttribute('x', -18);
+      windshield.setAttribute('y', -30);
+      windshield.setAttribute('width', 36);
+      windshield.setAttribute('height', 20);
+      windshield.setAttribute('rx', 5);
+      windshield.setAttribute('ry', 5);
+      windshield.setAttribute('fill', '#90caf9');
+      playerGroup.appendChild(windshield);
+      
+      const rearWindow = document.createElementNS(ns, 'rect');
+      rearWindow.setAttribute('x', -18);
+      rearWindow.setAttribute('y', 10);
+      rearWindow.setAttribute('width', 36);
+      rearWindow.setAttribute('height', 20);
+      rearWindow.setAttribute('rx', 5);
+      rearWindow.setAttribute('ry', 5);
+      rearWindow.setAttribute('fill', '#90caf9');
+      playerGroup.appendChild(rearWindow);
+      
+      // Wheels
+      const wheels = [
+        {x: -20, y: -25},
+        {x: 20, y: -25},
+        {x: -20, y: 25},
+        {x: 20, y: 25}
+      ];
+      
+      wheels.forEach(pos => {
+        const wheel = document.createElementNS(ns, 'rect');
+        wheel.setAttribute('x', pos.x - 8);
+        wheel.setAttribute('y', pos.y - 5);
+        wheel.setAttribute('width', 16);
+        wheel.setAttribute('height', 10);
+        wheel.setAttribute('rx', 3);
+        wheel.setAttribute('ry', 3);
+        wheel.setAttribute('fill', '#212121');
+        playerGroup.appendChild(wheel);
+      });
+      
+      // Headlights
+      const headlights = [
+        {x: -15, y: -40},
+        {x: 15, y: -40}
+      ];
+      
+      headlights.forEach(pos => {
+        const light = document.createElementNS(ns, 'rect');
+        light.setAttribute('x', pos.x - 5);
+        light.setAttribute('y', pos.y);
+        light.setAttribute('width', 10);
+        light.setAttribute('height', 5);
+        light.setAttribute('rx', 2);
+        light.setAttribute('ry', 2);
+        light.setAttribute('fill', '#ffeb3b');
+        playerGroup.appendChild(light);
+      });
+      
+      // Taillights
+      const taillights = [
+        {x: -15, y: 40},
+        {x: 15, y: 40}
+      ];
+      
+      taillights.forEach(pos => {
+        const light = document.createElementNS(ns, 'rect');
+        light.setAttribute('x', pos.x - 5);
+        light.setAttribute('y', pos.y - 5);
+        light.setAttribute('width', 10);
+        light.setAttribute('height', 5);
+        light.setAttribute('rx', 2);
+        light.setAttribute('ry', 2);
+        light.setAttribute('fill', '#f44336');
+        playerGroup.appendChild(light);
+      });
+      
+      // Position the player
+      playerGroup.setAttribute('transform', `translate(${gameWidth/2}, ${gameHeight-100})`);
+      svg.appendChild(playerGroup);
+      
+      return {
+        element: playerGroup,
+        x: gameWidth/2,
+        y: gameHeight-100,
+        width: 50,
+        height: 80,
+        speed: 0,
+        maxSpeed: 5
+      };
+    }
+    
+    function createRoadMarking(y) {
+      const marking = document.createElementNS(ns, 'rect');
+      marking.setAttribute('x', gameWidth/2 - laneMarkingWidth/2);
+      marking.setAttribute('y', y);
+      marking.setAttribute('width', laneMarkingWidth);
+      marking.setAttribute('height', laneMarkingHeight);
+      marking.setAttribute('fill', '#FFF');
+      svg.appendChild(marking);
+      
+      roadMarkings.push({
+        element: marking,
+        y: y
+      });
+    }
+    
+    function createObstacle() {
+      const types = [
+        {
+          width: 60,
+          height: 90,
+          color: '#2196f3',
+          shape: 'car'
+        },
+        {
+          width: 80,
+          height: 120,
+          color: '#4caf50',
+          shape: 'truck'
+        },
+        {
+          width: 40,
+          height: 40,
+          color: '#ff9800',
+          shape: 'box'
+        }
+      ];
+      
+      const type = types[Math.floor(Math.random() * types.length)];
+      const lanePosition = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+      const xPos = gameWidth/2 + lanePosition * (roadWidth / 3);
+      
+      const obstacle = document.createElementNS(ns, 'g');
+      
+      if (type.shape === 'car') {
+        // Car body
+        const carBody = document.createElementNS(ns, 'rect');
+        carBody.setAttribute('x', -type.width/2);
+        carBody.setAttribute('y', -type.height/2);
+        carBody.setAttribute('width', type.width);
+        carBody.setAttribute('height', type.height);
+        carBody.setAttribute('rx', 10);
+        carBody.setAttribute('ry', 10);
+        carBody.setAttribute('fill', type.color);
+        carBody.setAttribute('stroke', '#1565c0');
+        carBody.setAttribute('stroke-width', '2');
+        obstacle.appendChild(carBody);
+        
+        // Windows
+        const windshield = document.createElementNS(ns, 'rect');
+        windshield.setAttribute('x', -type.width/2 + 10);
+        windshield.setAttribute('y', -type.height/2 + 10);
+        windshield.setAttribute('width', type.width - 20);
+        windshield.setAttribute('height', 20);
+        windshield.setAttribute('rx', 5);
+        windshield.setAttribute('ry', 5);
+        windshield.setAttribute('fill', '#90caf9');
+        obstacle.appendChild(windshield);
+        
+        // Wheels
+        const wheels = [
+          {x: -type.width/2 + 10, y: -type.height/2 + 15},
+          {x: type.width/2 - 10, y: -type.height/2 + 15},
+          {x: -type.width/2 + 10, y: type.height/2 - 15},
+          {x: type.width/2 - 10, y: type.height/2 - 15}
+        ];
+        
+        wheels.forEach(pos => {
+          const wheel = document.createElementNS(ns, 'rect');
+          wheel.setAttribute('x', pos.x - 8);
+          wheel.setAttribute('y', pos.y - 5);
+          wheel.setAttribute('width', 16);
+          wheel.setAttribute('height', 10);
+          wheel.setAttribute('rx', 3);
+          wheel.setAttribute('ry', 3);
+          wheel.setAttribute('fill', '#212121');
+          obstacle.appendChild(wheel);
+        });
+      } else if (type.shape === 'truck') {
+        // Truck body
+        const truckCabin = document.createElementNS(ns, 'rect');
+        truckCabin.setAttribute('x', -type.width/2);
+        truckCabin.setAttribute('y', -type.height/2);
+        truckCabin.setAttribute('width', type.width/2);
+        truckCabin.setAttribute('height', type.height/3);
+        truckCabin.setAttribute('rx', 5);
+        truckCabin.setAttribute('ry', 5);
+        truckCabin.setAttribute('fill', type.color);
+        truckCabin.setAttribute('stroke', '#1b5e20');
+        truckCabin.setAttribute('stroke-width', '2');
+        obstacle.appendChild(truckCabin);
+        
+        const truckBody = document.createElementNS(ns, 'rect');
+        truckBody.setAttribute('x', -type.width/2);
+        truckBody.setAttribute('y', -type.height/2 + type.height/3);
+        truckBody.setAttribute('width', type.width);
+        truckBody.setAttribute('height', 2*type.height/3);
+        truckBody.setAttribute('rx', 5);
+        truckBody.setAttribute('ry', 5);
+        truckBody.setAttribute('fill', '#8d6e63');
+        truckBody.setAttribute('stroke', '#4e342e');
+        truckBody.setAttribute('stroke-width', '2');
+        obstacle.appendChild(truckBody);
+        
+        // Window
+        const window = document.createElementNS(ns, 'rect');
+        window.setAttribute('x', -type.width/2 + 10);
+        window.setAttribute('y', -type.height/2 + 5);
+        window.setAttribute('width', type.width/2 - 20);
+        window.setAttribute('height', type.height/3 - 10);
+        window.setAttribute('rx', 3);
+        window.setAttribute('ry', 3);
+        window.setAttribute('fill', '#90caf9');
+        obstacle.appendChild(window);
+        
+        // Wheels
+        const wheels = [
+          {x: -type.width/2 + 15, y: type.height/2 - 15},
+          {x: -type.width/4, y: type.height/2 - 15},
+          {x: type.width/4, y: type.height/2 - 15},
+          {x: type.width/2 - 15, y: type.height/2 - 15}
+        ];
+        
+        wheels.forEach(pos => {
+          const wheel = document.createElementNS(ns, 'rect');
+          wheel.setAttribute('x', pos.x - 10);
+          wheel.setAttribute('y', pos.y - 8);
+          wheel.setAttribute('width', 20);
+          wheel.setAttribute('height', 16);
+          wheel.setAttribute('rx', 3);
+          wheel.setAttribute('ry', 3);
+          wheel.setAttribute('fill', '#212121');
+          obstacle.appendChild(wheel);
+        });
+      } else if (type.shape === 'box') {
+        // Box
+        const box = document.createElementNS(ns, 'rect');
+        box.setAttribute('x', -type.width/2);
+        box.setAttribute('y', -type.height/2);
+        box.setAttribute('width', type.width);
+        box.setAttribute('height', type.height);
+        box.setAttribute('fill', type.color);
+        box.setAttribute('stroke', '#e65100');
+        box.setAttribute('stroke-width', '2');
+        obstacle.appendChild(box);
+        
+        // Warning stripes
+        const stripe1 = document.createElementNS(ns, 'line');
+        stripe1.setAttribute('x1', -type.width/2);
+        stripe1.setAttribute('y1', -type.height/2);
+        stripe1.setAttribute('x2', type.width/2);
+        stripe1.setAttribute('y2', type.height/2);
+        stripe1.setAttribute('stroke', '#e65100');
+        stripe1.setAttribute('stroke-width', '3');
+        obstacle.appendChild(stripe1);
+        
+        const stripe2 = document.createElementNS(ns, 'line');
+        stripe2.setAttribute('x1', type.width/2);
+        stripe2.setAttribute('y1', -type.height/2);
+        stripe2.setAttribute('x2', -type.width/2);
+        stripe2.setAttribute('y2', type.height/2);
+        stripe2.setAttribute('stroke', '#e65100');
+        stripe2.setAttribute('stroke-width', '3');
+        obstacle.appendChild(stripe2);
+      }
+      
+      obstacle.setAttribute('transform', `translate(${xPos}, -100)`);
+      svg.appendChild(obstacle);
+      
+      obstacles.push({
+        element: obstacle,
+        x: xPos,
+        y: -100,
+        width: type.width,
+        height: type.height
+      });
+    }
+    
+    function startGame() {
+      document.getElementById('start-screen').style.display = 'none';
+      isGameRunning = true;
+      gameSpeed = 2;
+      score = 0;
+      updateScore();
+      lastObstacleTime = Date.now();
+      
+      // Start game loop
+      gameLoop();
+    }
+    
+    function restartGame() {
+      // Remove all obstacles
+      obstacles.forEach(obstacle => {
+        svg.removeChild(obstacle.element);
+      });
+      obstacles = [];
+      
+      // Reset player position
+      player.x = gameWidth/2;
+      player.y = gameHeight-100;
+      updatePlayerPosition();
+      
+      document.getElementById('game-over').style.display = 'none';
+      startGame();
+    }
+    
+    function updatePlayerPosition() {
+      player.element.setAttribute('transform', `translate(${player.x}, ${player.y})`);
+    }
+    
+    function checkCollision(a, b) {
+      return !(
+        a.x + a.width/2 < b.x - b.width/2 ||
+        a.x - a.width/2 > b.x + b.width/2 ||
+        a.y + a.height/2 < b.y - b.height/2 ||
+        a.y - a.height/2 > b.y + b.height/2
+      );
+    }
+    
+    function updateScore() {
+      document.getElementById('score').textContent = Math.floor(score);
+      document.getElementById('final-score').textContent = Math.floor(score);
+      document.getElementById('speed').textContent = Math.floor(gameSpeed * 20);
+      
+      if (score > highScore) {
+        highScore = score;
+        document.getElementById('high-score').textContent = Math.floor(highScore);
+      }
+    }
+    
+    function gameLoop() {
+      if (!isGameRunning) return;
+      
+      // Handle player movement
+      if ((keys['ArrowLeft'] || keys['a'] || keys['A']) && player.x > (gameWidth - roadWidth) / 2 + player.width/2) {
+        player.x -= 5;
+      }
+      
+      if ((keys['ArrowRight'] || keys['d'] || keys['D']) && player.x < (gameWidth + roadWidth) / 2 - player.width/2) {
+        player.x += 5;
+      }
+      
+      if ((keys['ArrowUp'] || keys['w'] || keys['W']) && gameSpeed < maxSpeed) {
+        gameSpeed += acceleration;
+      } else if ((keys['ArrowDown'] || keys['s'] || keys['S']) && gameSpeed > 1) {
+        gameSpeed -= deceleration;
+      } else if (gameSpeed > 2) {
+        gameSpeed -= deceleration / 2;
+      } else if (gameSpeed < 2) {
+        gameSpeed += acceleration / 2;
+      }
+      
+      updatePlayerPosition();
+      
+      // Update road markings
+      roadMarkings.forEach((marking, index) => {
+        marking.y += gameSpeed;
+        marking.element.setAttribute('y', marking.y);
+        
+        if (marking.y > gameHeight) {
+          svg.removeChild(marking.element);
+          roadMarkings.splice(index, 1);
+          createRoadMarking(-laneMarkingHeight);
+        }
+      });
+      
+      // Update obstacles
+      obstacles.forEach((obstacle, index) => {
+        obstacle.y += gameSpeed;
+        obstacle.element.setAttribute('transform', `translate(${obstacle.x}, ${obstacle.y})`);
+        
+        // Check collision
+        if (checkCollision(player, obstacle)) {
+          gameOver();
+          return;
+        }
+        
+        // Remove if off screen
+        if (obstacle.y > gameHeight + 100) {
+          svg.removeChild(obstacle.element);
+          obstacles.splice(index, 1);
+        }
+      });
+      
+      // Maybe spawn a new obstacle
+      const now = Date.now();
+      if (now - lastObstacleTime > obstacleMinGap && Math.random() < obstacleSpawnRate) {
+        createObstacle();
+        lastObstacleTime = now;
+        // Gradually increase difficulty
+        obstacleSpawnRate = Math.min(obstacleSpawnRate + 0.0005, 0.05);
+        obstacleMinGap = Math.max(obstacleMinGap - 5, 500);
+      }
+      
+      // Update score
+      score += gameSpeed / 10;
+      updateScore();
+      
+      // Continue game loop
+      animationId = requestAnimationFrame(gameLoop);
+    }
+    
+    function gameOver() {
+      isGameRunning = false;
+      cancelAnimationFrame(animationId);
+      document.getElementById('game-over').style.display = 'block';
+    }
+    
+    // Initialize the game
+    initGame();
+  </script>
+</body>
+</html>

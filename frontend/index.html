@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameVerse - Your Gaming Paradise</title>
+    <link rel="stylesheet" href="new(1).css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;700;900&family=Michroma&family=Audiowide&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <h1>GameVerse</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
+                <a href="#games"><i class="fas fa-gamepad"></i> Games</a>
+                <a href="leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a>
+                <a href="login.html" class="login-btn">Login</a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="hero-section">
+        <video autoplay muted loop class="background-video">
+            <source src="video.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-content">
+            <h1 class="main-title">Welcome to GameVerse</h1>
+            <p class="subtitle">Your Ultimate Gaming Destination</p>
+        </div>
+    </div>
+    
+    <section class="game-categories">
+        <h2>Game Categories</h2>
+        <div class="category-grid">
+            <div class="category-card" onclick="scrollToCategory('puzzle')">
+                <i class="fas fa-puzzle-piece"></i>
+                <h3>Puzzle</h3>
+            </div>
+            <div class="category-card">
+                <i class="fas fa-running"></i>
+                <h3>Action</h3>
+            </div>
+            <div class="category-card">
+                <i class="fas fa-chess"></i>
+                <h3>Strategy</h3>
+            </div>
+            <div class="category-card">
+                <i class="fas fa-car"></i>
+                <h3>Racing</h3>
+            </div>
+        </div>
+    </section>
+
+    <section class="featured-games" id="games">
+        <h2>Featured Games</h2>
+        <div class="game-grid">
+            <div class="game-card" data-game="rock">
+                <div class="game-image">
+                    <img src="https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTrz7qG2QfFOXKp8yQc3VReOdyFkbQoHHchXujx9CmPWpPyOmQmsYtLoO_4CECkpK1GFLa2keinhgq3x3CRY0JAflROAxbKcWfLgbfbbVs" alt="Rock Paper Scissors">
+                </div>
+                <div class="game-info">
+                    <h3>Rock Paper Scissors</h3>
+                    <p>Classic hand game reimagined</p>
+                    <button class="play-btn" onclick="window.location.href='rock.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="pacman">
+                <div class="game-image">
+                    <img src="https://easydrawingguides.com/wp-content/uploads/2021/09/Pacman-Pixel-Art-step-by-step-drawing-tutorial-step-10.png" alt="Pacman">
+                </div>
+                <div class="game-info">
+                    <h3>Pacman</h3>
+                    <p>The arcade classic returns</p>
+                    <button class="play-btn" onclick="window.location.href='pacman.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="tic-tac-toe">
+                <div class="game-image">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7szpVWqktbmAQhGwEf02JPqVS83q3bWSSgwZtedg6XCqvfKkqoHOyBUHFkgAkYb7vC60&usqp=CAU" alt="Tic Tac Toe">
+                </div>
+                <div class="game-info">
+                    <h3>Tic Tac Toe</h3>
+                    <p>Strategic mind game</p>
+                    <button class="play-btn" onclick="window.location.href='tic_tac_toe.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="snake">
+                <div class="game-image">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ17g1ZbF1Sul0xPnFFqWt2dLJrnOhk7GcRSA&s" alt="Snake">
+                </div>
+                <div class="game-info">
+                    <h3>Snake</h3>
+                    <p>Retro snake adventure</p>
+                    <button class="play-btn"  onclick="window.location.href='snake.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="balloon">
+                <div class="game-image">
+                    <img src="https://m.media-amazon.com/images/I/91DGan0cTQL.png" alt="balloon">
+                </div>
+                <div class="game-info">
+                    <h3>Catch the Balloon</h3>
+                    <p>Classic game to catch the balloon</p>
+                    <button class="play-btn" onclick="window.location.href='balloon.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="catch">
+                <div class="game-image">
+                    <img src="https://www.shutterstock.com/image-vector/boy-red-shirt-catching-blue-600nw-497492119.jpg" alt="ball">
+                </div>
+                <div class="game-info">
+                    <h3>Catch that ball!</h3>
+                    <p>catch the ball before its too late!</p>
+                    <button class="play-btn" onclick="window.location.href='catch.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="color catch">
+                <div class="game-image">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeSace973pnhX0yD1uwdqmE5VAsjZ2nTua7g&s" alt="color">
+                </div>
+                <div class="game-info">
+                    <h3>Catch the cOlOr!</h3>
+                    <p>Color colorer!</p>
+                    <button class="play-btn" onclick="window.location.href='color_catch.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="math">
+                <div class="game-image">
+                    <img src="https://img.freepik.com/free-vector/maths-realistic-chalkboard-background_23-2148159115.jpg" alt="math">
+                </div>
+                <div class="game-info">
+                    <h3>Math game</h3>
+                    <p>Think youre good at maths?</p>
+                    <button class="play-btn" onclick="window.location.href='math.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="memory">
+                <div class="game-image">
+                    <img src="https://www.mentalup.co/img/new-icon-co/remember-the-face.png" alt="memory">
+                </div>
+                <div class="game-info">
+                    <h3>Memory Games</h3>
+                    <p>Classic hand game reimagined</p>
+                    <button class="play-btn" onclick="window.location.href='memory.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="racing-game">
+                <div class="game-image">
+                    <img src="https://thumbs.dreamstime.com/b/competition-cars-race-finish-line-drivers-illustration-featuring-intense-car-two-neck-neck-44370500.jpg" alt="racing game">
+                </div>
+                <div class="game-info">
+                    <h3>Race it!</h3>
+                    <p>Racing br br...</p>
+                    <button class="play-btn" onclick="window.location.href='racing-game.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="hill-climbing">
+                <div class="game-image">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRue1ynC87GozNgXxrOkCHK3S0PAdZgxYks3w&s" alt="hill-climbing">
+                </div>
+                <div class="game-info">
+                    <h3>Hill-Climber</h3>
+                    <p>Climb that hill!</p>
+                    <button class="play-btn" onclick="window.location.href='hill-climber.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="sudoku">
+                <div class="game-image">
+                    <img src="https://img.freepik.com/free-vector/hand-drawn-flat-design-sudoku-game-design_23-2149288593.jpg?semt=ais_hybrid&w=740" alt="hill-climbing">
+                </div>
+                <div class="game-info">
+                    <h3>Sudoku</h3>
+                    <p>Challenge the numbers!</p>
+                    <button class="play-btn" onclick="window.location.href='sudoku.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="candy-game">
+                <div class="game-image">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPkooG6J_Y9VkdTl9lxbO7JUKni0tj47vNm5Fe07l-1YvCFL3i-ifK71SWyUD2dKcBlTo&usqp=CAU" alt="crush that candy!">
+                </div>
+                <div class="game-info">
+                    <h3>Candy Crushhhh!</h3>
+                    <p>Crush that candy!</p>
+                    <button class="play-btn" onclick="window.location.href='candy_crush.html'">Play Now</button>
+                </div>
+            </div>
+            <div class="game-card" data-game="tower of hanoi">
+                <div class="game-image">
+                    <img src="https://playcoolmath.com/cdn/games/3/images/thumbnail/hanoi-tower-math-thumbnail.jpg" alt="hanoi!">
+                </div>
+                <div class="game-info">
+                    <h3>Tower of Hanoi!</h3>
+                    <p>Classic use of tower of hanoi principle for young brains!</p>
+                    <button class="play-btn" onclick="window.location.href='hanoi.html'">Play Now</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About GameVerse</h3>
+                <p>Your ultimate destination for online gaming entertainment.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="#" data-info="Our terms define how our services may be used.">Terms of Service</a>
+                <a href="#" data-info="We respect your privacy and protect your data.">Privacy Policy</a>
+                <a href="#" data-info="Reach us at gameverse@gmail.com for more information about us.">Contact Us</a>
+                
+                <div id="info-display"></div>
+              </div>
+              <style>
+                a[data-info] {
+                  color: #0066cc;
+                  text-decoration: none;
+                  cursor: pointer;
+                  margin-right: 15px;
+                  position: relative;
+                }
+                a[data-info]:hover {
+                  text-decoration: underline;
+                  color: #004080;
+                }
+                #info-display {
+                  margin-top: 10px;
+                  padding: 8px 12px;
+                  background-color: #f5f5f5;
+                  border-left: 3px solid #0066cc;
+                  font-size: 14px;
+                  color: #333;
+                  display: none; 
+                  transition: all 0.3s ease;
+                }
+                @keyframes fadeIn {
+                  from { opacity: 0; transform: translateY(-5px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                
+                #info-display.active {
+                  display: block;
+                  animation: fadeIn 0.3s ease-in-out;
+                }</style>
+              <script>
+                const links = document.querySelectorAll('.footer-section a');
+                const infoDisplay = document.getElementById('info-display');
+                links.forEach(link => {
+                  link.addEventListener('click', function(e) {
+                    e.preventDefault(); 
+                    const info = this.getAttribute('data-info');
+                    infoDisplay.textContent = info;
+                    infoDisplay.classList.add('active');
+    links.forEach(l => l.classList.remove('active'));
+    this.classList.add('active');
+                  });
+                });
+              </script>
+            <div class="footer-section">
+                <h3>Connect With Us</h3>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-discord"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 GameVerse. All Rights Reserved.</p>
+        </div>
+    </footer>
+    <script src="homepage.js"></script>
+</body>
+</html>
