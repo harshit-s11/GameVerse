@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hill Climber</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #333;
+      font-family: Arial, sans-serif;
+    }
+    
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    canvas {
+      background-color: #87CEEB;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+    }
+    
+    .controls {
+      position: absolute;
+      bottom: 30px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      z-index: 10;
+    }
+    
+    .control-btn {
+      width: 80px;
+      height: 80px;
+      background-color: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      backdrop-filter: blur(5px);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    
+    .control-btn:active {
+      background-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .game-ui {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      font-size: 20px;
+      font-weight: bold;
+    }
+    
+    .game-over, .start-screen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      z-index: 20;
+      backdrop-filter: blur(5px);
+      min-width: 300px;
+      display: none;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    h1 {
+      margin-top: 0;
+    }
+    
+    .fuel-bar-container {
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      z-index: 10;
+      width: 200px;
+      height: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    
+    .fuel-bar {
+      height: 100%;
+      background-color: #FF9800;
+      width: 100%;
+      transition: width 0.3s;
+    }
+    
+    .pickup {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #FF9800;
+      z-index: 5;
+      box-shadow: 0 0 10px #FF9800;
+      animation: pulse 1s infinite alternate;
+    }
+    
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="game-ui">
+      <div>Distance: <span id="distance">0</span>m</div>
+      <div>Fuel</div>
+    </div>
+    
+    <div class="fuel-bar-container">
+      <div class="fuel-bar" id="fuel-bar"></div>
+    </div>
+    
+    <div class="controls">
+      <div class="control-btn" id="btn-left">←</div>
+      <div class="control-btn" id="btn-right">→</div>
+    </div>
+    
+    <div class="start-screen" id="start-screen">
+      <h1>Hill Climber</h1>
+      <p>Drive as far as you can up the hills!</p>
+      <p>Use ← and → keys or buttons to control</p>
+      <p>Collect fuel cans to keep going</p>
+      <button id="start-btn">Start Game</button>
+    </div>
+    
+    <div class="game-over" id="game-over">
+      <h1>Game Over</h1>
+      <p>You traveled: <span id="final-distance">0</span>m</p>
+      <button id="restart-btn">Play Again</button>
+    </div>
+  </div>
+  
+  <script>
+    // Get canvas and context
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    
+    // Set canvas dimensions
+    let canvasWidth = Math.min(window.innerWidth, 800);
+    let canvasHeight = window.innerHeight;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    
+    // Game elements
+    const startScreen = document.getElementById("start-screen");
+    const gameOverScreen = document.getElementById("game-over");
+    const distanceDisplay = document.getElementById("distance");
+    const finalDistanceDisplay = document.getElementById("final-distance");
+    const fuelBar = document.getElementById("fuel-bar");
+    const btnLeft = document.getElementById("btn-left");
+    const btnRight = document.getElementById("btn-right");
+    const startBtn = document.getElementById("start-btn");
+    const restartBtn = document.getElementById("restart-btn");
+    
+    // Game settings
+    const gravity = 0.5;
+    const friction = 0.3; // REDUCED friction from 0.8 to 0.3
+    const carWidth = 60;
+    const carHeight = 40;
+    const wheelRadius = 15;
+    const suspensionLength = 20;
+    const suspensionStiffness = 0.2;
+    const suspensionDamping = 0.5;
+    const power = 0.4; // INCREASED power from 0.3 to 0.4
+    const maxFuel = 100;
+    const fuelConsumptionRate = 0.05;
+    const initialTerrainWidth = 200;
+    
+    // Game state
+    let gameRunning = false;
+    let distance = 0;
+    let fuel = maxFuel;
+    let camera = { x: 0, y: 0 };
+    let keys = { left: false, right: false };
+    let terrain = [];
+    let fuelCans = [];
+    
+    // Car state
+    let car = {
+      x: 200,
+      y: 100,
+      rotation: 0,
+      velocityX: 0,
+      velocityY: 0,
+      angularVelocity: 0,
+      wheels: [
+        { x: -carWidth/2 + wheelRadius, y: carHeight/2, rotation: 0, onGround: false },
+        { x: carWidth/2 - wheelRadius, y: carHeight/2, rotation: 0, onGround: false }
+      ],
+      accelerating: 0 // -1 for left, 1 for right, 0 for none
+    };
+    
+    // Initialize game
+    function init() {
+      // Reset game state
+      distance = 0;
+      fuel = maxFuel;
+      camera.x = 0;
+      camera.y = 0;
+      terrain = [];
+      fuelCans = [];
+      
+      // Reset car
+      car.x = 200;
+      car.y = 100;
+      car.rotation = 0;
+      car.velocityX = 0;
+      car.velocityY = 0;
+      car.angularVelocity = 0;
+      car.wheels[0].rotation = 0;
+      car.wheels[1].rotation = 0;
+      
+      // Generate initial terrain
+      generateTerrain();
+      
+      // Update UI
+      updateUI();
+      
+      // Show start screen
+      startScreen.style.display = "block";
+      gameOverScreen.style.display = "none";
+    }
+    
+    // Generate terrain
+    function generateTerrain() {
+      terrain = [];
+      
+      // Add flat starting area
+      for (let x = 0; x < initialTerrainWidth; x++) {
+        terrain.push({ x: x, y: canvasHeight / 2 });
+      }
+      
+      // Generate hills
+      let lastX = initialTerrainWidth;
+      let lastY = canvasHeight / 2;
+      
+      for (let i = 0; i < 1000; i++) {
+        const segmentLength = 20 + Math.random() * 80;
+        const segmentSlope = Math.random() * 0.4 - 0.2;
+        const segmentPoints = Math.floor(segmentLength / 10);
+        
+        for (let j = 0; j < segmentPoints; j++) {
+          const x = lastX + (j * 10);
+          const y = lastY + segmentSlope * 10;
+          
+          // Ensure terrain doesn't go too high or too low
+          const clampedY = Math.max(100, Math.min(canvasHeight - 100, y));
+          
+          terrain.push({ x: x, y: clampedY });
+          lastY = clampedY;
+        }
+        
+        lastX += segmentLength;
+        
+        // Add hills and valleys as game progresses
+        if (i > 10) {
+          // Add steeper hills and deeper valleys
+          const hillType = Math.random();
+          
+          if (hillType < 0.3) {
+            // Steep uphill
+            const hillHeight = 50 + Math.random() * 150;
+            const hillWidth = 100 + Math.random() * 200;
+            
+            for (let x = 0; x < hillWidth; x++) {
+              const progress = x / hillWidth;
+              const y = lastY - Math.sin(progress * Math.PI) * hillHeight;
+              terrain.push({ x: lastX + x, y: y });
+            }
+            
+            lastX += hillWidth;
+            lastY = terrain[terrain.length - 1].y;
+          } else if (hillType < 0.6) {
+            // Valley
+            const valleyDepth = 50 + Math.random() * 150;
+            const valleyWidth = 100 + Math.random() * 200;
+            
+            for (let x = 0; x < valleyWidth; x++) {
+              const progress = x / valleyWidth;
+              const y = lastY + Math.sin(progress * Math.PI) * valleyDepth;
+              terrain.push({ x: lastX + x, y: y });
+            }
+            
+            lastX += valleyWidth;
+            lastY = terrain[terrain.length - 1].y;
+          } else {
+            // Bumpy section
+            const bumpWidth = 200 + Math.random() * 300;
+            const bumpHeight = 20 + Math.random() * 40;
+            
+            for (let x = 0; x < bumpWidth; x++) {
+              const y = lastY + Math.sin(x / 20) * bumpHeight;
+              terrain.push({ x: lastX + x, y: y });
+            }
+            
+            lastX += bumpWidth;
+            lastY = terrain[terrain.length - 1].y;
+          }
+        }
+        
+        // Add fuel cans occasionally
+        if (Math.random() < 0.2) {
+          const fuelX = lastX - segmentLength / 2;
+          const terrainY = getTerrainYAtX(fuelX);
+          
+          if (terrainY) {
+            fuelCans.push({
+              x: fuelX,
+              y: terrainY - 30,
+              collected: false
+            });
+          }
+        }
+      }
+    }
+    
+    // Get terrain height at specific x position
+    function getTerrainYAtX(x) {
+      // Find the terrain segments that surround this x position
+      for (let i = 0; i < terrain.length - 1; i++) {
+        if (terrain[i].x <= x && terrain[i + 1].x >= x) {
+          // Interpolate to find exact y
+          const ratio = (x - terrain[i].x) / (terrain[i + 1].x - terrain[i].x);
+          return terrain[i].y + ratio * (terrain[i + 1].y - terrain[i].y);
+        }
+      }
+      return null;
+    }
+    
+    // Physics update
+    function updatePhysics() {
+      // Apply car acceleration
+      if (car.accelerating !== 0) {
+        // FIXED: Apply direct force in direction car is pointing
+        const forceX = Math.cos(car.rotation) * power * car.accelerating;
+        car.velocityX += forceX;
+        
+        // Apply some upward force when accelerating (helps with hills)
+        if (car.wheels[0].onGround || car.wheels[1].onGround) {
+          car.velocityY -= Math.abs(forceX) * 0.2;
+        }
+        
+        fuel -= fuelConsumptionRate * Math.abs(car.accelerating);
+      }
+      
+      // Apply gravity
+      car.velocityY += gravity;
+      
+      // Count wheels on ground
+      let wheelsOnGround = 0;
+      
+      // Update wheel positions
+      car.wheels.forEach(wheel => {
+        // Calculate wheel's world position
+        const worldX = car.x + Math.cos(car.rotation) * wheel.x - Math.sin(car.rotation) * wheel.y;
+        const worldY = car.y + Math.sin(car.rotation) * wheel.x + Math.cos(car.rotation) * wheel.y;
+        
+        // Check terrain collision
+        const terrainY = getTerrainYAtX(worldX);
+        
+        if (terrainY && worldY + wheelRadius > terrainY) {
+          // Calculate compression
+          const compressionAmount = worldY + wheelRadius - terrainY;
+          
+          // Apply suspension force
+          const suspensionForce = compressionAmount * suspensionStiffness;
+          
+          // Calculate force vector perpendicular to car body
+          const normalX = Math.cos(car.rotation + Math.PI/2);
+          const normalY = Math.sin(car.rotation + Math.PI/2);
+          
+          // Apply force to car
+          car.velocityX -= normalX * suspensionForce;
+          car.velocityY -= normalY * suspensionForce;
+          
+          // FIXED: Apply friction only in proportion to wheel's normal force
+          if (compressionAmount > 0) {
+            // Calculate velocity in wheel's local frame
+            const wheelVelocityX = car.velocityX + car.angularVelocity * wheel.y;
+            
+            // Apply friction proportional to compression
+            const frictionForce = wheelVelocityX * friction * (compressionAmount / 20);
+            car.velocityX -= frictionForce;
+            
+            // Apply angular force based on wheel position and friction
+            car.angularVelocity += wheel.x * suspensionForce * 0.005;
+            wheelsOnGround++;
+          }
+          
+          // Wheel rotation
+          const terrainAngle = Math.atan2(
+            getTerrainYAtX(worldX + 1) - terrainY,
+            1
+          );
+          
+          wheel.rotation = terrainAngle;
+          wheel.onGround = true;
+        } else {
+          wheel.onGround = false;
+        }
+      });
+      
+      // Apply velocity
+      car.x += car.velocityX;
+      car.y += car.velocityY;
+      
+      // Apply angular velocity
+      car.rotation += car.angularVelocity;
+      
+      // Dampen angular velocity
+      car.angularVelocity *= 0.95;
+      
+      // FIXED: Apply reduced air resistance when in the air
+      if (wheelsOnGround === 0) {
+        car.velocityX *= 0.99;
+        car.velocityY *= 0.99;
+      } else {
+        // Apply stronger damping when on ground (but not too much)
+        car.velocityX *= 0.98;
+        car.velocityY *= 0.98;
+      }
+      
+      // ADDED: Prevent car from stopping completely
+      if (Math.abs(car.velocityX) < 0.1 && car.accelerating !== 0) {
+        car.velocityX = car.accelerating * 0.1;
+      }
+      
+      // Update distance
+      distance = Math.max(distance, Math.floor(car.x));
+      
+      // Update fuel
+      fuel = Math.max(0, fuel);
+      
+      // Check for game over conditions
+      if (fuel <= 0 || car.y > canvasHeight + 100 || car.rotation > Math.PI * 0.7 || car.rotation < -Math.PI * 0.7) {
+        gameOver();
+      }
+      
+      // Check for fuel can collection
+      fuelCans.forEach(fuelCan => {
+        if (!fuelCan.collected) {
+          const dx = car.x - fuelCan.x;
+          const dy = car.y - fuelCan.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 40) {
+            fuelCan.collected = true;
+            fuel = Math.min(maxFuel, fuel + 30);
+          }
+        }
+      });
+    }
+    
+    // Update camera position
+    function updateCamera() {
+      // Follow car with some lag
+      camera.x += (car.x - camera.x - canvasWidth * 0.3) * 0.1;
+      camera.y += (car.y - camera.y - canvasHeight * 0.5) * 0.1;
+      
+      // Don't let camera go too far up or down
+      camera.y = Math.max(0, Math.min(camera.y, canvasHeight));
+    }
+    
+    // Update UI
+    function updateUI() {
+      distanceDisplay.textContent = distance;
+      fuelBar.style.width = (fuel / maxFuel * 100) + "%";
+    }
+    
+    // Draw game
+    function draw() {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      
+      // Draw sky gradient
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+      skyGradient.addColorStop(0, "#4286f4");
+      skyGradient.addColorStop(1, "#87CEEB");
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      
+      // Draw distant mountains
+      ctx.fillStyle = "#728FCE";
+      
+      for (let i = 0; i < 5; i++) {
+        const mountainX = ((camera.x * 0.2) % 800) + i * 200 - 400;
+        const mountainHeight = 100 + i * 30;
+        
+        ctx.beginPath();
+        ctx.moveTo(mountainX - 100, canvasHeight - 100);
+        ctx.lineTo(mountainX, canvasHeight - 100 - mountainHeight);
+        ctx.lineTo(mountainX + 100, canvasHeight - 100);
+        ctx.fill();
+      }
+      
+      // Draw clouds
+      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      
+      for (let i = 0; i < 10; i++) {
+        const cloudX = ((camera.x * 0.1) % 1000) + i * 200 - 500;
+        const cloudY = 50 + i * 30;
+        
+        ctx.beginPath();
+        ctx.arc(cloudX, cloudY, 30, 0, Math.PI * 2);
+        ctx.arc(cloudX + 25, cloudY - 10, 25, 0, Math.PI * 2);
+        ctx.arc(cloudX + 25, cloudY + 10, 25, 0, Math.PI * 2);
+        ctx.arc(cloudX + 50, cloudY, 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Save context
+      ctx.save();
+      
+      // Apply camera translation
+      ctx.translate(-camera.x + canvasWidth * 0.3, -camera.y + canvasHeight * 0.5);
+      
+      // Draw terrain
+      ctx.beginPath();
+      ctx.moveTo(terrain[0].x, terrain[0].y);
+      
+      terrain.forEach(point => {
+        ctx.lineTo(point.x, point.y);
+      });
+      
+      ctx.lineTo(terrain[terrain.length - 1].x, canvasHeight + 100);
+      ctx.lineTo(terrain[0].x, canvasHeight + 100);
+      ctx.closePath();
+      
+      const terrainGradient = ctx.createLinearGradient(0, 0, 0, canvasHeight + 100);
+      terrainGradient.addColorStop(0, "#4CAF50");
+      terrainGradient.addColorStop(0.5, "#795548");
+      terrainGradient.addColorStop(1, "#5D4037");
+      
+      ctx.fillStyle = terrainGradient;
+      ctx.fill();
+      
+      // Draw terrain outline
+      ctx.beginPath();
+      terrain.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#3E2723";
+      ctx.stroke();
+      
+      // Draw fuel cans
+      fuelCans.forEach(fuelCan => {
+        if (!fuelCan.collected) {
+          ctx.save();
+          ctx.translate(fuelCan.x, fuelCan.y);
+          
+          // Draw fuel can body
+          ctx.fillStyle = "#FF9800";
+          ctx.fillRect(-10, -15, 20, 30);
+          
+          // Draw fuel can top
+          ctx.fillStyle = "#E65100";
+          ctx.fillRect(-5, -20, 10, 5);
+          
+          // Draw fuel can handle
+          ctx.strokeStyle = "#E65100";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(0, -20);
+          ctx.lineTo(0, -25);
+          ctx.lineTo(5, -25);
+          ctx.stroke();
+          
+          ctx.restore();
+        }
+      });
+      
+      // Draw car
+      ctx.save();
+      ctx.translate(car.x, car.y);
+      ctx.rotate(car.rotation);
+      
+      // Draw suspension
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 3;
+      
+      car.wheels.forEach(wheel => {
+        ctx.beginPath();
+        ctx.moveTo(wheel.x, 0);
+        ctx.lineTo(wheel.x, wheel.y);
+        ctx.stroke();
+      });
+      
+      // Draw car body
+      ctx.fillStyle = "#F44336";
+      ctx.beginPath();
+      ctx.roundRect(-carWidth/2, -carHeight/2, carWidth, carHeight, 10);
+      ctx.fill();
+      
+      // Draw car details
+      ctx.fillStyle = "#FFECB3";
+      ctx.fillRect(-carWidth/2 + 10, -carHeight/2 + 5, carWidth - 20, 10);
+      
+      // Draw wheels
+      car.wheels.forEach(wheel => {
+        ctx.save();
+        ctx.translate(wheel.x, wheel.y);
+        
+        // Wheels rotate based on car movement
+        const wheelAngle = wheel.onGround ? car.velocityX * 0.05 : 0;
+        ctx.rotate(wheelAngle);
+        
+        ctx.fillStyle = "#333";
+        ctx.beginPath();
+        ctx.arc(0, 0, wheelRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = "#666";
+        ctx.beginPath();
+        ctx.arc(0, 0, wheelRadius - 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw wheel spokes
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(wheelRadius * Math.cos(i * Math.PI/2), wheelRadius * Math.sin(i * Math.PI/2));
+          ctx.stroke();
+        }
+        
+        ctx.restore();
+      });
+      
+      ctx.restore(); // Restore car transformation
+      
+      ctx.restore(); // Restore camera transformation
+    }
+    
+    // Game loop
+    function gameLoop() {
+      if (gameRunning) {
+        updatePhysics();
+        updateCamera();
+        updateUI();
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+    }
+    
+    // Start game
+    function startGame() {
+      gameRunning = true;
+      startScreen.style.display = "none";
+      gameLoop();
+    }
+    
+    // Game over
+    function gameOver() {
+      gameRunning = false;
+      finalDistanceDisplay.textContent = distance;
+      gameOverScreen.style.display = "block";
+    }
+    
+    // Event listeners
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+        keys.left = true;
+        car.accelerating = -1;
+      }
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+        keys.right = true;
+        car.accelerating = 1;
+      }
+    });
+    
+    window.addEventListener("keyup", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+        keys.left = false;
+        if (keys.right) {
+          car.accelerating = 1;
+        } else {
+          car.accelerating = 0;
+        }
+      }
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+        keys.right = false;
+        if (keys.left) {
+          car.accelerating = -1;
+        } else {
+          car.accelerating = 0;
+        }
+      }
+    });
+    
+    btnLeft.addEventListener("mousedown", () => {
+      keys.left = true;
+      car.accelerating = -1;
+    });
+    
+    btnLeft.addEventListener("mouseup", () => {
+      keys.left = false;
+      if (keys.right) {
+        car.accelerating = 1;
+      } else {
+        car.accelerating = 0;
+      }
+    });
+    
+    btnLeft.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      keys.left = true;
+      car.accelerating = -1;
+    });
+    
+    btnLeft.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      keys.left = false;
+      if (keys.right) {
+        car.accelerating = 1;
+      } else {
+        car.accelerating = 0;
+      }
+    });
+    
+    btnRight.addEventListener("mousedown", () => {
+      keys.right = true;
+      car.accelerating = 1;
+    });
+    
+    btnRight.addEventListener("mouseup", () => {
+      keys.right = false;
+      if (keys.left) {
+        car.accelerating = -1;
+      } else {
+        car.accelerating = 0;
+      }
+    });
+    
+    btnRight.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      keys.right = true;
+      car.accelerating = 1;
+    });
+    
+    btnRight.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      keys.right = false;
+      if (keys.left) {
+        car.accelerating = -1;
+      } else {
+        car.accelerating = 0;
+      }
+    });
+    
+    startBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", () => {
+      init();
+      startGame();
+    });
+    
+    window.addEventListener("resize", () => {
+      canvasWidth = Math.min(window.innerWidth, 800);
+      canvasHeight = window.innerHeight;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+    });
+    
+    // Initialize
+    init();
+  </script>
+</body>
+</html>

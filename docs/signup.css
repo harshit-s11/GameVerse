@@ -1,0 +1,176 @@
+
+/* General Styles */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Paprika&family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    display: flex;
+    justify-content: space-between; /* Space between left and right sections */
+    align-items: center;
+    height: 100vh;
+    color: #fff;
+    background-image: url("bg.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding: 0 50px; /* Add padding to the sides */
+}
+
+/* Left Section - Quote */
+.quote-section {
+    flex: 1; /* Takes up half the screen */
+    text-align: center;
+    padding-right: 50px; /* Space between quote and signup container */
+}
+
+.quote-section h2 {
+    font-family: "Michroma", serif;
+    font-size: 3rem;
+    color: rgb(255, 255, 255);
+    text-transform: uppercase;
+    word-spacing: 4px;
+    letter-spacing: 2px;
+    opacity: 0;
+    transform: translateX(-50px);
+    animation: slideLeft 3s ease-out 1.5s forwards;
+}
+
+@keyframes slideLeft {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Signup Container */
+.signup-container {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 50%; /* Occupies half of the screen */
+    max-width: 1000px; /* Optional: Limits the maximum width */
+    text-align: center;
+    flex-shrink: 0; /* Prevents the container from shrinking */
+}
+
+.signup-container h1 {
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+}
+
+/* Input Groups */
+.input-group {
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-family: "Michroma", serif;
+    font-weight: 400;
+    font-style: normal;
+    padding-top: 10px;
+    font-size: 20px;
+    color: rgb(240, 233, 25);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 1rem;
+}
+
+.input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Button */
+button {
+  font-family: "Michroma", serif;
+  border: none;
+  outline: none;
+  margin-top: 10px;
+  padding: 18px 60px;
+  border-radius: 12px; /* More curved edges */
+  background: linear-gradient(135deg, #6a11cb, #d125fc); /* Gradient background */
+  font-size: 20px;
+  font-weight: 900;
+  color: white;
+  letter-spacing: 3px;
+  word-spacing: 4px;
+  cursor: pointer;
+  transition: 0.4s ease-in-out;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(50px);
+  animation: btn 1s ease-out 2s forwards;
+}
+
+/* Add a cool glowing effect on hover */
+button:hover {
+  background: linear-gradient(135deg, #d125fc, #6a11cb);
+  box-shadow: 0 0 15px rgba(106, 17, 203, 0.8), 0 0 30px rgba(37, 117, 252, 0.6);
+  transform: translateY(-3px);
+}
+
+/* Add an inner glowing border effect */
+button::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(106, 17, 203, 0.6), rgba(37, 117, 252, 0.6));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+}
+
+button:hover::before {
+  opacity: 1;
+}
+
+@keyframes btn{
+  to {
+      opacity: 1;
+      transform:translateX(0) ;
+  }
+}
+
+/* Login Link */
+.login-link {
+   font-family: "Michroma", serif;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.login-link a {
+    color: #2575fc;
+    text-decoration: none;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+.audiowide-regular {
+  font-family: "Audiowide", serif;
+  font-weight: 400;
+  font-style: normal;
+  color: #00ff00; /* Neon Green */
+  text-shadow: 0 0 5px #00ff00, 0 0 5px #00ff00, 0 0 5px #800080, 0 0 5px #800080; /* Green inner glow, Purple outer glow */
+}

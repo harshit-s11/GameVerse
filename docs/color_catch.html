@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Color Catch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: white;
+    }
+    #gameContainer {
+      text-align: center;
+      background-color: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+    canvas {
+      background-color: #111;
+      display: block;
+      margin: 20px auto;
+      border-radius: 10px;
+    }
+    .buckets {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    .bucket {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid white;
+      transition: transform 0.2s;
+    }
+    .bucket:hover {
+      transform: scale(1.1);
+    }
+    #message {
+      font-size: 1.3rem;
+      margin-top: 15px;
+      min-height: 30px;
+    }
+    #scoreDisplay {
+      font-size: 1.1rem;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #fff;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <h1>🎯 Color Catch</h1>
+    <div id="countdown" style="font-size: 2rem; margin: 10px 0;"></div>
+    <canvas id="gameCanvas" width="300" height="400"></canvas>
+    <div class="buckets">
+      <div class="bucket" id="red" style="background-color: red;"></div>
+      <div class="bucket" id="lime" style="background-color: lime;"></div>
+      <div class="bucket" id="dodgerblue" style="background-color: dodgerblue;"></div>
+    </div>
+    <div id="scoreDisplay">Score: 0 / 0</div>
+    <div id="message"></div>
+    <button onclick="startGame()">Restart Game</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const messageDiv = document.getElementById('message');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const buckets = document.querySelectorAll('.bucket');
+
+    const colors = ['red', 'lime', 'dodgerblue'];
+    let score = 0;
+    let totalDrops = 0;
+    let maxDrops = 10;
+    let shape = null;
+    let animationId = null;
+    let gameRunning = false;
+    let bucketY = canvas.height - 30;
+
+    function getRandomColor() {
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function createShape() {
+      return {
+        x: Math.random() * (canvas.width - 40) + 20,
+        y: -20,
+        radius: 20,
+        color: getRandomColor(),
+        speed: 2.5
+      };
+    }
+
+    function drawShape(s) {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.fillStyle = s.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawBuckets() {
+      // Draw bucket outlines at the bottom of the canvas
+      colors.forEach((color, index) => {
+        const bucketWidth = 60;
+        const totalWidth = colors.length * bucketWidth + (colors.length - 1) * 15;
+        const startX = (canvas.width - totalWidth) / 2;
+        const x = startX + index * (bucketWidth + 15);
+        
+        ctx.beginPath();
+        ctx.arc(x + bucketWidth/2, bucketY, bucketWidth/2, 0, Math.PI, true);
+        ctx.lineTo(x, bucketY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      });
+    }
+
+    function draw() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      drawBuckets();
+
+      if (shape) {
+        shape.y += shape.speed;
+        drawShape(shape);
+
+        // Check if the ball has reached the bucket area
+        if (shape.y >= bucketY - shape.radius) {
+          checkCatch();
+        }
+      }
+
+      animationId = requestAnimationFrame(draw);
+    }
+    
+    function checkCatch() {
+      let caught = false;
+      
+      // Calculate bucket positions
+      colors.forEach((color, index) => {
+        const bucketWidth = 60;
+        const totalWidth = colors.length * bucketWidth + (colors.length - 1) * 15;
+        const startX = (canvas.width - totalWidth) / 2;
+        const x = startX + index * (bucketWidth + 15) + bucketWidth/2;
+        
+        // Check if ball is above the right bucket
+        if (Math.abs(shape.x - x) < bucketWidth/2 && shape.color === color) {
+          score++;
+          caught = true;
+          showFeedback("✅ Good catch!");
+        }
+      });
+      
+      if (!caught) {
+        showFeedback("❌ Missed!");
+      }
+      
+      totalDrops++;
+      scoreDisplay.textContent = `Score: ${score} / ${totalDrops}`;
+      
+      if (totalDrops >= maxDrops) {
+        endGame();
+      }
+      else {
+        nextShape();
+      }
+    }
+    
+    function showFeedback(message) {
+      messageDiv.textContent = message;
+      setTimeout(() => {
+        if (gameRunning) messageDiv.textContent = "";
+      }, 1000);
+    }
+    
+    function nextShape() {
+      shape = createShape();
+    }
+
+    function handleCatch(colorClicked) {
+      if (!gameRunning || !shape) return;
+      
+      // Move the ball to the clicked bucket position
+      colors.forEach((color, index) => {
+        if (color === colorClicked) {
+          const bucketWidth = 60;
+          const totalWidth = colors.length * bucketWidth + (colors.length - 1) * 15;
+          const startX = (canvas.width - totalWidth) / 2;
+          const x = startX + index * (bucketWidth + 15) + bucketWidth/2;
+          shape.x = x;
+          shape.y = bucketY - shape.radius;
+          checkCatch();
+        }
+      });
+    }
+
+    function endGame() {
+      cancelAnimationFrame(animationId);
+      gameRunning = false;
+      shape = null;
+
+      if (score >= 7) {
+        messageDiv.textContent = `🎉 Congratulations! You caught ${score} out of ${maxDrops} correctly!`;
+      } else {
+        messageDiv.textContent = `😢 Better luck next time! You caught ${score} of ${maxDrops}.`;
+      }
+    }
+
+    function showCountdown(callback) {
+      let count = 3;
+      const countdownDiv = document.getElementById('countdown');
+      countdownDiv.textContent = count;
+
+      const countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countdownDiv.textContent = count;
+        } else if (count === 0) {
+          countdownDiv.textContent = "Go!";
+        } else {
+          clearInterval(countdownInterval);
+          countdownDiv.textContent = "";
+          callback(); // Start the game
+        }
+      }, 1000);
+    }
+
+
+    function startGame() {
+      cancelAnimationFrame(animationId);
+      score = 0;
+      totalDrops = 0;
+      shape = null;
+      messageDiv.textContent = '';
+      gameRunning = false;
+
+      showCountdown(() => {
+        gameRunning = true;
+        nextShape();
+        draw();
+      });
+    }
+
+
+    buckets.forEach(bucket => {
+      bucket.addEventListener('click', () => {
+        handleCatch(bucket.id);
+      });
+    });
+
+    startGame();
+  </script>
+</body>
+</html>

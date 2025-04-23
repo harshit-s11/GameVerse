@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Submit Score - GameVerse</title>
+</head>
+<body>
+  <h2>Submit Score</h2>
+
+  <form id="score-form">
+    <label>Username: <input type="text" id="username" required></label><br><br>
+    <label>Score: <input type="number" id="score" required></label><br><br>
+    <label>Achievements (comma separated): <input type="text" id="achievements"></label><br><br>
+    <button type="submit">Submit</button>
+  </form>
+
+  <p id="message"></p>
+
+  <script>
+    document.getElementById("score-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value;
+      const score = parseInt(document.getElementById("score").value);
+      const achievements = document.getElementById("achievements").value.split(",");
+
+      fetch("http://localhost:5000/submit-score", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username,
+          score,
+          achievements
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("message").textContent = data.message;
+      })
+      .catch(err => {
+        console.error("Submission failed:", err);
+        document.getElementById("message").textContent = "Error submitting score.";
+      });
+    });
+  </script>
+</body>
+</html>

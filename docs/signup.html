@@ -1,0 +1,43 @@
+signup.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="signup.css">
+</head>
+<body>
+  <!-- Left Section - Quote -->
+  <div class="quote-section">
+    <h2 class="format">Join the community.<span style="color: rgb(46, 223, 37);"> Game On!</span></h2>
+  </div>
+
+  <!-- Right Section - Signup Container -->
+  <div class="signup-container">
+    <h1 class="audiowide-regular">Create Your Account</h1>
+    <form id="format">
+      <div class="input-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+      </div>
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      </div>
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <div class="input-group">
+        <label for="confirm-password">Confirm Password</label>
+        <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+      </div>
+      <button type="button" onclick="window.location.href='login.html'">Sign Up</button>
+    </form>
+    <p class="login-link">Already have an account? <a href="login.html">Log In</a></p>
+  </div>
+  <script src="signup.js"></script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Balloon Pop Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: lightcyan;
+      text-align: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    h1 {
+      font-size: 2.5rem;
+      color: white;
+      text-shadow: 2px 2px 6px #000;
+      margin-top: 1rem;
+    }
+    .container {
+      height: 70vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .game {
+      width: 80vw;
+      height: 60vh;
+      position: relative;
+      overflow: hidden;
+      background: #e0f7fa;
+      border: 2px solid #00796b;
+      border-radius: 10px;
+    }
+    .balloon {
+      position: absolute;
+      bottom: -100px;
+      width: 60px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: red;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    .msg-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      color: white;
+      display: none;
+      text-shadow: 2px 2px 6px #000;
+      z-index: 10;
+    }
+    #scoreBoard {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 6px #000;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+    #startBtn, #resetBtn, #leaderboardBtn, #newGameBtn {
+      padding: 1rem;
+      font-size: 1.25rem;
+      background: #191913;
+      color: white;
+      border-radius: 1rem;
+      border: none;
+      margin: 1rem;
+      cursor: pointer;
+    }
+    #startBtn:hover, #resetBtn:hover, #leaderboardBtn:hover, #newGameBtn:hover {
+      background-color: #ff5722;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎈 Balloon Pop Game 🎈</h1>
+
+  <div class="msg-container" id="msgContainer">
+    <p id="msg">Time's Up!</p>
+    <button id="newGameBtn">New Game</button>
+  </div>
+
+  <main>
+    <div class="container">
+      <div class="game" id="gameArea"></div>
+    </div>
+    <div id="scoreBoard">Score: 0</div>
+    <button id="startBtn">Start Game</button>
+    <button id="resetBtn">Reset Game</button>
+    <button id="leaderboardBtn" onclick="window.location.href='leaderboard.html'">View Leaderboard</button>
+  </main>
+
+  <script>
+    const gameArea = document.getElementById('gameArea');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const msgContainer = document.getElementById('msgContainer');
+    const msg = document.getElementById('msg');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+
+    let score = 0;
+    let gameRunning = false;
+    let balloonSpawner;
+    let gameTimer;
+    const spawnInterval = 700;
+
+    function randomColor() {
+      const colors = ['#f94144', '#f3722c', '#f8961e', '#90be6d', '#43aa8b', '#577590'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function spawnBalloon() {
+      if (!gameRunning) return;
+
+      const balloon = document.createElement('div');
+      balloon.classList.add('balloon');
+      const gameWidth = gameArea.clientWidth;
+      balloon.style.left = Math.random() * (gameWidth - 60) + 'px';
+      balloon.style.background = randomColor();
+      gameArea.appendChild(balloon);
+
+      const speed = Math.random() * 2 + 1;
+      let position = -100;
+
+      const move = setInterval(() => {
+        if (!gameRunning) {
+          clearInterval(move);
+          balloon.remove();
+          return;
+        }
+        position += speed;
+        balloon.style.bottom = position + 'px';
+
+        if (position > gameArea.clientHeight + 100) {
+          clearInterval(move);
+          balloon.remove();
+        }
+      }, 10);
+
+      balloon.onclick = () => {
+        score++;
+        scoreBoard.textContent = 'Score: ' + score;
+        createBurstEffect(balloon);
+        clearInterval(move);
+        balloon.remove();
+      };
+    }
+
+    function createBurstEffect(balloon) {
+      const rect = balloon.getBoundingClientRect();
+      const areaRect = gameArea.getBoundingClientRect();
+      for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'absolute';
+        particle.style.width = '6px';
+        particle.style.height = '6px';
+        particle.style.borderRadius = '50%';
+        particle.style.left = (rect.left - areaRect.left + Math.random() * 60) + 'px';
+        particle.style.top = (rect.top - areaRect.top + Math.random() * 80) + 'px';
+        particle.style.backgroundColor = balloon.style.background;
+        gameArea.appendChild(particle);
+
+        setTimeout(() => {
+          particle.remove();
+        }, 300);
+      }
+    }
+
+    function startGame() {
+      score = 0;
+      gameRunning = true;
+      scoreBoard.textContent = 'Score: 0';
+      msgContainer.style.display = 'none';
+      gameArea.innerHTML = '';
+      startBtn.style.display = 'none';
+
+      balloonSpawner = setInterval(spawnBalloon, spawnInterval);
+
+      gameTimer = setTimeout(() => {
+        endGame();
+      }, 30000); // 30 seconds
+    }
+
+    function endGame() {
+      gameRunning = false;
+      clearInterval(balloonSpawner);
+      clearTimeout(gameTimer);
+      msg.innerText = `Time's Up! Final Score: ${score}`;
+      msgContainer.style.display = 'block';
+      startBtn.style.display = 'inline-block';
+
+      // Save to leaderboard
+      const currentPlayer = localStorage.getItem('currentPlayer') || 'Guest';
+      let wins = JSON.parse(localStorage.getItem('playerWins')) || {};
+      wins[currentPlayer] = (wins[currentPlayer] || 0) + 1;
+      localStorage.setItem('playerWins', JSON.stringify(wins));
+
+      // Submit to backend with score
+      fetch("http://localhost:5000/submit-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentPlayer,
+          score: score,
+          achievements: ["Balloon Pop Victory"]
+        })
+      });
+    }
+
+    function resetGame() {
+      gameRunning = false;
+      clearInterval(balloonSpawner);
+      clearTimeout(gameTimer);
+      score = 0;
+      scoreBoard.textContent = 'Score: 0';
+      msgContainer.style.display = 'none';
+      gameArea.innerHTML = '';
+      startBtn.style.display = 'inline-block';
+    }
+
+    startBtn.onclick = startGame;
+    newGameBtn.onclick = resetGame;
+    resetBtn.onclick = resetGame;
+  </script>
+</body>
+</html>
